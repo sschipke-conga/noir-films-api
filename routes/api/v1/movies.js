@@ -1,8 +1,15 @@
 const express = require("express");
+import movieData from '../../../data/movieData';
 const router = express.Router();
+
 
 router.use(function (req, res, next) {
   console.log(req.ip, "<<<--- IP")
+  next();
+})
+
+router.use(function (req, res, next) {
+  console.log("Number of movies: -> ", movieData.length)
   next();
 })
 
