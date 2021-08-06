@@ -1,6 +1,6 @@
 module.exports = {
   development: {
-    client: "pg",
+    client: "postgresql",
     connection: "postgres://localhost/noir_films",
     migrations: {
       directory: "./db/migrations"
@@ -8,7 +8,8 @@ module.exports = {
     seeds: {
       directory: "./db/seeds/dev"
     },
-    useNullAsDefault: true
+    useNullAsDefault: true,
+    pool: { min: 0, max: 5 }
   },
   test: {
     client: "pg",
