@@ -23,7 +23,6 @@ if(environment === 'development' || 'test') {
 
 app.use(express.json());
 
-// app.use("/api/v1/data", data);
 app.use("/api/v1/movies", movies);
 
 
