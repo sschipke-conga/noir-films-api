@@ -29,3 +29,7 @@ This api was almost written entirely in JavaScript using the following libraries
   4. The API is now available for consumption locally
 
 </details>
+
+#### Heroku Commmands:
+##### To run commands on heroku simply do:
+- `heroku run {command}`
