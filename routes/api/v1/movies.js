@@ -9,22 +9,22 @@ router.get("/", async (req, res) => {
   try {
     let watchList = await fetchWatchlist();
     let previouslyWatched = await fetchPreviouslyWatched();
-    console.log("Successfully sent GET request for IP: ", req.ip, "URL: ", req.originalUrl);
+    console.log("Successfully sent GET request for IP: ", req.ip, "URL: ", req.originalUrl, " at ", new Date().toLocaleString());
     return res.status(200).json({watchList, previouslyWatched});
   }
   catch(err) {
-    console.error("Error sending GET Movies Response: ", {err});
+    console.error("Error sending GET Movies Response: ", {err}, "for", req.ip, " at ", new Date().toLocaleString());
     return res.status(500).json({msg: "Error sending response", err});
   }
 })
 
 router.put("/:id", async (request, res) => {
-  console.log("Processing update request from IP: ", request.ip, " at ", request.originalUrl);
+  console.log("Processing update request from IP: ", request.ip, " URL ", request.originalUrl, " at ", new Date().toLocaleString());
   const { id } = request.params;
   const {movie, password} = request.body;
   console.log("Attempting to update movie with id: ", movie['id']);
   if (password != 'Abolition2020!') {
-    console.error("Incorrect password!!", password, " for ", request.ip);
+    console.error("Incorrect password!!", password, " for ", request.ip, " at ", new Date().toLocaleString());
     return res.status(401).json({password: "Not authorized."});
   }
   let errors = validateMovieData(movie);
@@ -46,7 +46,7 @@ router.put("/:id", async (request, res) => {
     })
     .then(async () => {
       const newMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
-      console.log("Successfully updated movie: ", newMovie);
+      console.log("Successfully updated movie: ", newMovie, "DATE: ", new Date().toLocaleString());
       return res.status(200).json(newMovie[0]);
     })
   }
