@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 const environment = process.env.NODE_ENV || 'development';
-// import data from './routes/api/v1/data';
 import movies from './routes/api/v1/movies'
 const configuration = require('./knexfile')[environment];
 export const database = require('knex')(configuration);
@@ -16,7 +15,7 @@ app.locals.title = 'Noir Films API';
 
 if(environment === 'development' || 'test') {
   app.use(cors('*'));
-  console.log("Not production")
+  console.log("Environment: ", environment)
 } else {
   console.log("Production has initiated.")
 }
