@@ -70,7 +70,8 @@ router.post("/", async (request, res) => {
   const dbMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
   if(dbMovie.length) {
     console.error(`Movie with id: ${movie['id']} already exists.`)
-    return res.status(404).json({error: `Movie with id: ${movie['id']} already exists.`});
+    errors.id = `Movie with id: ${movie['id']} already exists.`
+    return res.status(409).json( errors );
   }
 
   const genres = movie.genres;
@@ -91,7 +92,7 @@ router.post("/", async (request, res) => {
         console.log("Successfully added movie: ", newMovie, "DATE: ", timeString);
         return res.status(200).json(newMovie[0]);
       })
-      .catch(err => { 
+      .catch(err => {
         console.error("Error adding movie with id: ", movie.id, " at ", timeString);
         return res.status(500).json({msg: "Error adding movie", err});
       })
@@ -126,13 +127,13 @@ async function updateGenresByMovie(movieId, genres) {
     }
 
 
-const insertGenre = (database, genre, movieId) => { 
+const insertGenre = (database, genre, movieId) => {
   return database('genre')
     .insert({
       genre_id: genre,
       movie_id: movieId
     })
-}       
+}
 
 async function fetchMovieByIdAndTitle(movieId, title) {
   try {
