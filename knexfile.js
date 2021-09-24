@@ -1,7 +1,7 @@
 module.exports = {
   development: {
-    client: "postgresql",
-    connection: "postgres://localhost/noir_films",
+    client: "pg",
+    connection: "pg://localhost/noir_films",
     migrations: {
       directory: "./db/migrations"
     },
@@ -13,7 +13,7 @@ module.exports = {
   },
   test: {
     client: "pg",
-    connection: "postgres://localhost/noir_films_test",
+    connection: "pg://localhost/noir_films_test",
     migrations: {
       directory: "./db/migrations"
     },
