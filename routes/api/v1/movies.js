@@ -1,6 +1,7 @@
 import { database } from "../../../app";
 import { aplhabetizeUneenMovies, sortPreviouslyWatched } from '../../../util/helpers';
 import { validateMovieData } from '../../../util/validation';
+import { timeString } from "../../../logging";
 
 const express = require("express");
 const router = express.Router();
@@ -9,22 +10,22 @@ router.get("/", async (req, res) => {
   try {
     let watchList = await fetchWatchlist();
     let previouslyWatched = await fetchPreviouslyWatched();
-    console.log("Successfully sent GET request for IP: ", req.ip, "URL: ", req.originalUrl, " at ", new Date().toLocaleString());
+    console.log("Successfully sent GET request for IP: ", req.ips, "URL: ", req.originalUrl, " at ", timeString);
     return res.status(200).json({watchList, previouslyWatched});
   }
   catch(err) {
-    console.error("Error sending GET Movies Response: ", {err}, "for", req.ip, " at ", new Date().toLocaleString());
+    console.error("Error sending GET Movies Response: ", {err}, "for", req.ip, " at ", timeString);
     return res.status(500).json({msg: "Error sending response", err});
   }
 })
 
 router.put("/:id", async (request, res) => {
-  console.log("Processing update request from IP: ", request.ip, " URL ", request.originalUrl, " at ", new Date().toLocaleString());
+  console.log("Processing update request from IP: ", request.ip, " URL ", request.originalUrl, " at ", timeString);
   const { id } = request.params;
   const {movie, password} = request.body;
   console.log("Attempting to update movie with id: ", movie['id']);
   if (password != 'Abolition2020!') {
-    console.error("Incorrect password!!", password, " for ", request.ip, " at ", new Date().toLocaleString());
+    console.error("Incorrect password!!", password, " for ", request.ip, " at ", timeString);
     return res.status(401).json({password: "Not authorized."});
   }
   let errors = validateMovieData(movie);
@@ -46,12 +47,59 @@ router.put("/:id", async (request, res) => {
     })
     .then(async () => {
       const newMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
-      console.log("Successfully updated movie: ", newMovie, "DATE: ", new Date().toLocaleString());
+      console.log("Successfully updated movie: ", newMovie, "DATE: ", timeString);
       return res.status(200).json(newMovie[0]);
     })
   }
-  
+})
 
+router.post("/", async (request, res) => {
+  console.log("Processing post request from IP: ", request.ips, " URL ", request.originalUrl, " at ", timeString);
+  const {movie, password} = request.body;
+  console.log("Attempting to add movie with id: ", movie['id']);
+  if (password != 'Abolition2020!') {
+    console.error("Incorrect password!!", password, " for ", request.ip, " at ", timeString);
+    return res.status(401).json({password: "Not authorized."});
+  }
+  let errors = validateMovieData(movie);
+  if(Object.keys(errors).length > 0) {
+    console.error(`Error adding movie: `, movie, {errors});
+    return res.status(422).json( errors );
+  }
+
+  const dbMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
+  if(dbMovie.length) {
+    console.error(`Movie with id: ${movie['id']} already exists.`)
+    errors.id = `Movie with id: ${movie['id']} already exists.`
+    return res.status(409).json( errors );
+  }
+
+  const genres = movie.genres;
+
+  delete movie.genres;
+  try {
+    return database('movie')
+    .insert(movie)
+      .then(() => {
+        addGenres(movie.id, genres);
+      })
+      .catch(err => {
+        console.error("Internal error: " , err);
+        return res.status(500).json({msg: "Error adding movie", err});
+      })
+      .then(async () => {
+        const newMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
+        console.log("Successfully added movie: ", newMovie, "DATE: ", timeString);
+        return res.status(200).json(newMovie[0]);
+      })
+      .catch(err => {
+        console.error("Error adding movie with id: ", movie.id, " at ", timeString);
+        return res.status(500).json({msg: "Error adding movie", err});
+      })
+    } catch (err) {
+      console.error("Error adding movie. Internal error: ", err);
+      return res.status(500).json({msg: "Could not add movie."});
+    }
 })
 
 async function updateGenresByMovie(movieId, genres) {
@@ -64,23 +112,33 @@ async function updateGenresByMovie(movieId, genres) {
       console.log("Successfully deleted movie genres for movie with id: ", {movieId})
       let genrePromises=[];
       genres.forEach(genre => {
-        genrePromises.push(insertGenres(database, genre, movieId));
+        genrePromises.push(insertGenre(database, genre, movieId));
       });
       return Promise.all(genrePromises);
     })
-}
+  }
 
-const insertGenres = (database, genre, movieId) => { 
+  async function addGenres(movieId, genres) {
+      let genrePromises=[];
+      genres.forEach(genre => {
+        genrePromises.push(insertGenre(database, genre, movieId));
+      });
+      return Promise.all(genrePromises);
+    }
+
+
+const insertGenre = (database, genre, movieId) => {
   return database('genre')
     .insert({
       genre_id: genre,
       movie_id: movieId
     })
-}       
+}
 
 async function fetchMovieByIdAndTitle(movieId, title) {
-  return database("movie")
-  .where({"movie.id": movieId})
+  try {
+    return database("movie")
+    .where({"movie.id": movieId})
     .innerJoin("genre", "movie.id", "genre.movie_id")
     .select([
       "movie.id",
@@ -99,6 +157,9 @@ async function fetchMovieByIdAndTitle(movieId, title) {
       database.raw("ARRAY_AGG(genre.genre_id) as genres"),
     ])
     .groupBy("movie.id", "genre.movie_id")
+  } catch (err) {
+    throw new Error(err);
+  }
 }
 
 

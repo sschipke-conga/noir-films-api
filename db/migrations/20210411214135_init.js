@@ -1,6 +1,6 @@
 
 exports.up = function async (knex) {
-  console.log("in fumigrations!!")
+  console.log("in migrations!!")
   return Promise.all([
     knex.schema.createTable("movie", function (table) {
       table.integer("id").primary().unsigned().unique();
