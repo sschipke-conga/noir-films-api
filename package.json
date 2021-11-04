@@ -18,16 +18,17 @@
     "bcrypt": "^5.0.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "knex": "^0.20.3",
+    "express-session": "^1.17.2",
+    "knex": "^0.95.11",
     "lodash.isempty": "^4.4.0",
     "node-fetch": "^2.6.1",
     "nodemon": "^2.0.1",
     "pg": "^8.0.3"
   },
   "devDependencies": {
-    "babel-jest": "^24.9.0",
+    "babel-jest": "^27.3.1",
     "dotenv": "^8.2.0",
-    "jest": "^24.9.0",
+    "jest": "^27.3.1",
     "regenerator-runtime": "^0.13.3",
     "supertest": "^4.0.2"
   }

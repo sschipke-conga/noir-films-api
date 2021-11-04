@@ -22,11 +22,12 @@ router.get("/", async (req, res) => {
 router.put("/:id", async (request, res) => {
   console.log("Processing update request from IP: ", request.ip, " URL ", request.originalUrl, " at ", timeString);
   const { id } = request.params;
-  const {movie, password} = request.body;
+  const auth = request.headers.authentication
+  const { movie } = request.body;
   console.log("Attempting to update movie with id: ", movie['id']);
-  if (password != 'Abolition2020!') {
-    console.error("Incorrect password!!", password, " for ", request.ip, " at ", timeString);
-    return res.status(401).json({password: "Not authorized."});
+  if (auth != 'Abolition2020!') {
+    console.error("Incorrect auth!!", auth, " for ", request.ip, " at ", timeString);
+    return res.status(401).json({auth: "Not authorized."});
   }
   let errors = validateMovieData(movie);
   if(Object.keys(errors).length > 0) {
@@ -55,10 +56,11 @@ router.put("/:id", async (request, res) => {
 
 router.post("/", async (request, res) => {
   console.log("Processing post request from IP: ", request.ips, " URL ", request.originalUrl, " at ", timeString);
-  const {movie, password} = request.body;
+  const auth = request.headers.authentication
+  const { movie } = request.body;
   console.log("Attempting to add movie with id: ", movie['id']);
-  if (password != 'Abolition2020!') {
-    console.error("Incorrect password!!", password, " for ", request.ip, " at ", timeString);
+  if (auth != 'Abolition2020!') {
+    console.error("Incorrect auth!!", auth, " for ", request.ip, " at ", timeString);
     return res.status(401).json({password: "Not authorized."});
   }
   let errors = validateMovieData(movie);
