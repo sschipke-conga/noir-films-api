@@ -62,33 +62,38 @@ router.put("/:id", async (request, res) => {
     return res.status(401).json({ auth: "Not authorized." });
   }
   const { movie } = request.body;
+  if (!Object.keys(movie).length) {
+    return res
+      .status(409)
+      .json({ error: "Movie must be included in request." });
+  }
   console.log("Attempting to update movie with id: ", movie["id"]);
   let errors = validateMovieData(movie);
   if (Object.keys(errors).length > 0) {
     console.error(`Error updating movie: `, movie, { errors });
     return res.status(422).json(errors);
   }
-  const dbMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
-  if (!dbMovie.length) {
+  const dbMovie = await fetchMovieById(movie.id);
+  if (!dbMovie) {
     console.error(`Unable to find mvie with id: ${movie["id"]}`, dbMovie);
     return res
       .status(404)
       .json({ error: `No existing movie with id of ${id}` });
   } else {
-    updateGenresByMovie(dbMovie[0].id, movie.genres)
+    updateGenresByMovie(dbMovie.id, movie.genres)
       .then(() => {
         delete movie.genres;
         return database("movie").where({ id: movie.id }).update(movie);
       })
       .then(async () => {
-        const newMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
+        const newMovie = await fetchMovieById(movie.id);
         console.log(
           "Successfully updated movie: ",
           newMovie,
           "DATE: ",
           timeString()
         );
-        return res.status(200).json(newMovie[0]);
+        return res.status(200).json(newMovie);
       });
   }
 });
@@ -122,8 +127,8 @@ router.post("/", async (request, res) => {
     return res.status(422).json(errors);
   }
 
-  const dbMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
-  if (dbMovie.length) {
+  const dbMovie = await fetchMovieById(movie.id);
+  if (dbMovie) {
     console.error(`Movie with id: ${movie["id"]} already exists.`);
     errors.id = `Movie with id: ${movie["id"]} already exists.`;
     return res.status(409).json(errors);
@@ -143,14 +148,14 @@ router.post("/", async (request, res) => {
         return res.status(500).json({ msg: "Error adding movie", err });
       })
       .then(async () => {
-        const newMovie = await fetchMovieByIdAndTitle(movie.id, movie.title);
+        const newMovie = await fetchMovieById(movie.id);
         console.log(
           "Successfully added movie: ",
           newMovie,
           "DATE: ",
           timeString()
         );
-        return res.status(200).json(newMovie[0]);
+        return res.status(200).json(newMovie);
       })
       .catch((err) => {
         console.error(
@@ -189,9 +194,28 @@ router.delete("/:id", async (request, res) => {
     );
     return res.status(401).json({ auth: "Not authorized." });
   }
+  const movie = await fetchMovieById(id);
+  if (!movie) {
+    return res.status(404).json({ error: `Movie with id: ${id} does not exit.` });
+  }
+  if (movie.seen) {
+    return res
+      .status(409)
+      .json({ error: "Unable to delete a movie that has been watched." });
+  }
   console.log("Attempting to DELETE movie with id: ", id);
-  await handleMovieDeletion(id);
-  return res.json({ message: `Successfully deleted movie with id: ${id}`, id })
+  try {
+    await handleMovieDeletion(id);
+    return res.json({
+      message: `Successfully deleted movie with id: ${id}`,
+      id
+    });
+  } catch (error) {
+    if (error["status"]) {
+      const { status, message } = error;
+      return res.status(status).json({ error: message });
+    }
+  }
 });
 
 async function updateGenresByMovie(movieId, genres) {
@@ -227,10 +251,10 @@ const insertGenre = (database, genre, movieId) => {
   });
 };
 
-async function fetchMovieByIdAndTitle(movieId, title) {
+async function fetchMovieById(id) {
   try {
     return database("movie")
-      .where({ "movie.id": movieId })
+      .where({ "movie.id": id })
       .innerJoin("genre", "movie.id", "genre.movie_id")
       .select([
         "movie.id",
@@ -248,7 +272,8 @@ async function fetchMovieByIdAndTitle(movieId, title) {
         "movie.date_watched",
         database.raw("ARRAY_AGG(genre.genre_id) as genres")
       ])
-      .groupBy("movie.id", "genre.movie_id");
+      .groupBy("movie.id", "genre.movie_id")
+      .first();
   } catch (err) {
     throw new Error(err);
   }
@@ -311,13 +336,27 @@ async function fetchPreviouslyWatched() {
 }
 
 const handleMovieDeletion = async (movieId) => {
-  return database("genre")
-    .where({
-      movie_id: movieId
-    })
-    .del()
-    .then(() => {
-      return database("movie").where({ id: movieId }).del();
+  return database("movie")
+    .where({ id: movieId, seen: false })
+    .then((movies) => {
+      if (!movies.length) {
+        throw {
+          status: 404,
+          message: "Unable to find unwatched movie with id: " + movieId
+        };
+      }
+      return database("genre")
+        .where({ movie_id: movieId })
+        .del()
+        .then((genres) => {
+          if (!genres.length) {
+            throw {
+              status: 404,
+              message: "No genres for movie with id: " + movieId
+            };
+          }
+          return database("movies").where({ id: movieId }).del();
+        });
     });
 };
 
