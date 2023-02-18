@@ -1,0 +1,8 @@
+node_modules
+README.md
+fly.toml
+passwords-development.json
+.vscode
+.ssh
+.ssh-cert.pub
+flyEnv

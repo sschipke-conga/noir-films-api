@@ -15,11 +15,16 @@ app.use(express.json());
 
 app.locals.title = 'Noir Films API';
 
-if(environment === 'development' || 'test') {
+if(environment === 'development' || environment === 'test') {
   app.use(cors('*'));
   console.log("Environment: ", environment)
-} else {
-  console.log("Production has initiated.")
+} else if (environment === "staging") {
+  app.use(cors("**blackstories-dev.netlify.app**"));
+  console.log("Using staging cors.");
+} else if (environment === "production") {
+  app.use(cors("**blackstories.netlify.app**"));
+  app.use(cors('*'));
+  console.log("Using production cors.");
 }
 
 app.use("/api/v1/movies", movies);
