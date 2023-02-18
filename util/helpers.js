@@ -40,3 +40,12 @@ export const processAllMovies = (allMovies) => {
   const previouslyWatched = allMovies.filter(movie => movie.seen);
   return { watchList: aplhabetizeUneenMovies(watchList), previouslyWatched: sortPreviouslyWatched(previouslyWatched)}
 }
+
+const specialChars = "!$%^&*#";
+export const generateSessionId = () => {
+  return (
+    Math.random().toString(36).slice(4) +
+    specialChars.charAt(Math.floor(Math.random() * specialChars.length)) +
+    Math.random().toString(36).toUpperCase().slice(4)
+  );
+};
