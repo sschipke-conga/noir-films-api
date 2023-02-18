@@ -13,7 +13,7 @@ processes = []
   NODE_ENV="staging"
 
 [deploy]
-  release_command = "yarn seedMovies"
+  release_command = "yarn migrateLatest"
 
 [experimental]
   auto_rollback = true
